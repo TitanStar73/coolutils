@@ -2,6 +2,7 @@ import requests
 import json
 import matplotlib.pyplot as plt
 import multiprocessing as mp
+import sqlite3
 
 MARKERS = ['o', 's', '^', 'D', 'v', 'x', 'P', 'h', '+', '*'] #in order of best looking ones, in my opinion anyways ;)
 
@@ -143,8 +144,67 @@ Multiprocess.pool(myfunc,[(1,2,3),(4,5,6)])
 
 #Database class for sqlite3
 
-#Database Cell
+class DatabaseCell():
+    def __init__(self,row,col,fn,filename):
+        self.row = row
+        self.fn = fn
+        self.filename = filename
+        self.col = col
 
-#Database Row
+    def __getattr__(self,attr):
+        filename = self.filename
+        connection = sqlite3.connect(filename)
+        crsr = connection.cursor()
+        crsr.execute(f'SELECT {self.col} FROM {self.fn} WHERE id = ?', (self.row,))
+        result = crsr.fetchone()
+        connection.close()
+        if result is not None:
+            return result[0]
+        else:
+            return None
 
-#Database Table
+class DatabaseRow():
+    def __init__(self,row,fn,filename):
+        self.row = row
+        self.fn = fn
+        self.filename = filename
+
+    def __getitem__(self,col):
+        return DatabaseCell(self.row,col,self.fn,self.filename)
+    
+class Database():
+    #database name (str), columns (list of tuples) -> (name,[python/sqlite] datatype) | int,float,str supported
+    def __init__(self,fn:str,columns:tuple,force_write = False):
+        filename = "databases/" + fn + ".db"
+        self.fn = fn
+        self.filename = filename
+        try:
+            with open(filename) as f:
+                pass
+            if not force_write:
+                return False
+        except FileNotFoundError:
+            pass
+        with open(filename,"w+") as f:
+            pass
+        connection = sqlite3.connect(filename)
+        crsr = connection.cursor()
+        command = ""
+        for name,dt in columns:
+            if dt == int:
+                datatype = "INTEGER"
+            elif dt == float:
+                datatype = "REAL"
+            elif dt == str:
+                datatype = "TEXT"
+            else:
+                datatype = dt
+            command += f"{name} {datatype},"
+
+        crsr.execute(f"CREATE TABLE {fn} ({command[:-1]})")
+        connection.commit()
+        connection.close()
+        return True
+
+    def __getitem__(self,index):
+        return DatabaseRow(index,self.fn,self.filename)
