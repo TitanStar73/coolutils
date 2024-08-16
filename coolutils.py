@@ -1,6 +1,7 @@
 import requests
 import json
 import matplotlib.pyplot as plt
+import multiprocessing as mp
 
 MARKERS = ['o', 's', '^', 'D', 'v', 'x', 'P', 'h', '+', '*'] #in order of best looking ones, in my opinion anyways ;)
 
@@ -107,3 +108,43 @@ def plot(y_vals,x_vals=None, labels = None,show = True,plt_title = 'Plot of X an
     plt.grid(True)
     if show:
         plt.show()
+
+
+
+#Basic boilerplate for multiprocessing pool
+class Multiprocess():
+    def __init__(self):
+        pass
+    #args -> list of tuples | add_id -> provides id as first argument (useful if they are writing to seperate files)
+    def pool(func, args, add_id = False):
+        if add_id:
+            for i,x in enumerate(args):
+                args[i] = tuple([i] + list(x))
+        pool = mp.Pool()
+        results = pool.starmap(func, args)
+        pool.close()
+        pool.join()
+        return results
+
+    def run(funcs,args = None):
+        processes = []
+        for i,func in enumerate(funcs):
+            processes.append(mp.Process(target=func,args=(args[i],)))
+            processes[-1].start()
+        for p in processes:
+            p.join()
+
+"""
+def myfunc(i,a,b):
+    print(f"{i}. {a}+{b}={a+b}")
+
+Multiprocess.pool(myfunc,[(1,2,3),(4,5,6)])
+"""
+
+#Database class for sqlite3
+
+#Database Cell
+
+#Database Row
+
+#Database Table
