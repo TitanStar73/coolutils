@@ -163,6 +163,12 @@ class DatabaseCell():
         else:
             return None
 
+    def __setattr__(self,attr,value):
+        filename = self.filename
+        connection = sqlite3.connect(filename)
+        crsr = connection.cursor()
+        crsr.execute(f'UPDATE {self.fn} SET {self.col} = ? WHERE id = ?', (value, self.row))
+
 class DatabaseRow():
     def __init__(self,row,fn,filename):
         self.row = row
@@ -171,6 +177,21 @@ class DatabaseRow():
 
     def __getitem__(self,col):
         return DatabaseCell(self.row,col,self.fn,self.filename)
+
+    def __getattr__(self,attr):
+        filename = self.filename
+        connection = sqlite3.connect(filename)
+        crsr = connection.cursor()
+        crsr.execute(f'SELECT * FROM {self.fn} WHERE id = ?', (attr,))
+        result = crsr.fetchone()
+        connection.close()
+        return result if result else []
+
+    def __setattr__(self,attr,value):
+        connection = sqlite3.connect(self.filename)
+        crsr = connection.cursor()
+        crsr.execute(f'UPDATE {self.fn} SET {", ".join([f"{self.col} = ?" for self.col in value])} WHERE id = ?', (*value, self.row))
+
     
 class Database():
     #database name (str), columns (list of tuples) -> (name,[python/sqlite] datatype) | int,float,str supported
@@ -206,5 +227,40 @@ class Database():
         connection.close()
         return True
 
+    def __len__(self):
+        fn = self.fn
+        filename = self.filename
+        connection = sqlite3.connect(filename)
+        crsr = connection.cursor()
+        crsr.execute(f"SELECT COUNT(*) FROM {fn}")
+        return crsr.fetchall()[0][0]
+
+    def append(self,values:tuple):
+        fn = self.fn
+        filename = self.filename
+        connection = sqlite3.connect(filename)
+        crsr = connection.cursor()
+        crsr.execute(f'INSERT INTO {fn} VALUES {values};')
+        connection.commit()
+
     def __getitem__(self,index):
         return DatabaseRow(index,self.fn,self.filename)
+
+    def save(self,values:list):
+        for value in values:
+            self.append(value)
+
+    #item (leave empty for all, else int)
+    def get(self,num_results = None, offset = None):
+        fn = self.fn
+        filename = self.filename
+        connection = sqlite3.connect(filename)
+        crsr = connection.cursor()
+        if num_results == None:
+            crsr.execute(f"SELECT * FROM {fn}")
+        else:
+            crsr.execute(f"SELECT * FROM {fn} LIMIT {num_results} OFFSET {offset}")
+        return crsr.fetchall()
+
+    def __str__(self):
+        return str(self.get())
