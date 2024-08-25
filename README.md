@@ -52,4 +52,20 @@ First initialize a new database
 Now data can be used as a list of dictionaries :)
 
 `data.append(("NAME1", 1, 1.1))`
+
 `data[0]["id"] #-> 1`
+
+# Retry
+
+Decorator for use in debugging or web-requests
+```
+@retry(retries = 3, delay = 1, exponential_delay = True)
+def myfunc():
+    pass
+```
+
+# Timer
+
+`start_timer()` - Stars/resets timer
+
+`get_timer()` - Gets timer value as a `datetime` object
