@@ -3,6 +3,9 @@ import json
 import matplotlib.pyplot as plt
 import multiprocessing as mp
 import sqlite3
+from time import sleep
+from datetime import datetime
+import functools
 
 MARKERS = ['o', 's', '^', 'D', 'v', 'x', 'P', 'h', '+', '*'] #in order of best looking ones, in my opinion anyways ;)
 
@@ -41,10 +44,28 @@ CYAN = 96
 color_codes = {}
 START_OF_LINE = "\033[F\r\033[K"
 
-def print(text, end = "\n", color = None,move_cursor = ""):
+def print(text, end = "\n", color = None,move_cursor = "", delay_per_char = 0, delay_per_word = 0, delay_per_line = 0):
     color_codes = {None:"\033[0m", 91: '\033[91m', 92: '\033[92m', 93: '\033[93m', 94: '\033[94m', 95: '\033[95m', 96: '\033[96m'}
     oprint(move_cursor,end = color_codes[color])
-    oprint(text, end = end)
+    if delay_per_char == delay_per_word == delay_per_line == 0:
+        oprint(text, end = end)
+    else:
+        lines = text.split("\n")
+        words = [line.split(" ") for line in lines]
+        for line in lines:
+            for word in line:
+                word = word + " "
+                if delay_per_char > 0:
+                    for char in word:
+                        oprint(char,end = "")
+                        sleep(delay_per_char)
+                else:
+                    oprint(word,end = "")
+                if delay_per_word > 0:
+                    sleep(delay_per_word)
+            oprint("",end = "\n")
+            if delay_per_line > 0:
+                sleep(delay_per_line)
     oprint(color_codes[None],end = "")
 
 #print("Hello",color=RED, move_cursor = START_OF_LINE)
@@ -110,8 +131,6 @@ def plot(y_vals,x_vals=None, labels = None,show = True,plt_title = 'Plot of X an
     if show:
         plt.show()
 
-
-
 #Basic boilerplate for multiprocessing pool
 class Multiprocess():
     def __init__(self):
@@ -141,6 +160,38 @@ def myfunc(i,a,b):
 
 Multiprocess.pool(myfunc,[(1,2,3),(4,5,6)])
 """
+timer_start = None
+def start_timer():
+    global timer_start
+    timer_start = datetime.now()
+
+def get_timer():
+    global timer_start
+    if timer_start is None:
+        return None
+    return datetime.now() - timer_start
+
+def retry(retries = 3, delay = 5, exponential_delay = False):
+    """
+    Retry decorator that retries a function a number of times before raising an exception.
+    @retry(3,5)
+    def myfunc():
+        pass
+    """
+    def decorator(func):
+        @functools.wraps(func)
+        def wrapper(*args, **kwargs):
+            for i in range(1, retries + 1):
+                try:
+                    return func(*args, **kwargs)
+                except Exception as e:
+                    print(f"Attempt {i} failed: {e} | Args: {args} | Kwargs: {kwargs}")
+                    print(f"Sleeping for {delay * (2**(i-1) if exponential_delay else 1)} seconds")
+                    sleep(delay * (2**(i-1) if exponential_delay else 1))
+            raise Exception(f"Failed after {retries} attempts")
+        return wrapper
+    return decorator
+
 
 #Database class for sqlite3
 
