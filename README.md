@@ -1,3 +1,7 @@
+# Installation
+
+`pip install utilscool`
+
 # notify
 
 > This uses ntfy.sh
