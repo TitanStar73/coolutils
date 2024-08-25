@@ -2,6 +2,8 @@
 
 `pip install utilscool`
 
+Then import with: `from coolutils import coolutils`
+
 # notify
 
 > This uses ntfy.sh
