@@ -4,6 +4,18 @@
 
 Then import with: `from coolutils import coolutils`
 
+# Cool one-liners to show its power!:
+```
+coolutils.plot(
+    [1.01**x for x in range(0,365)], 
+    plt_title = "Daily 1% improvement", 
+    x_labels = "Days", 
+    y_labels = "Improvement")
+```
+This simple line, outputs:
+
+![image](https://github.com/user-attachments/assets/29dfd9c0-f0c6-4b15-94ba-2fe32c12ecc0)
+
 # notify
 
 > This uses ntfy.sh
